@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <link
+        href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,700,700i|Roboto:100,300,400,500,700|Philosopher:400,400i,700,700i"
+        rel="stylesheet">
+    <link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+    <link href="lib/owlcarousel/assets/owl.theme.default.min.css" rel="stylesheet">
+    <link href="lib/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+    <link href="lib/animate/animate.min.css" rel="stylesheet">
+    <link href="lib/modal-video/css/modal-video.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+
+    <link href="css/style.css" rel="stylesheet" />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@3.4.10/dist/vuetify.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.4.10/dist/vuetify.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-container>
+                <div>
+                    <div id="headers" class="header header-hide">
+                        <div class="container">
+                            <div id="logo" class="pull-left">
+                                <h1><a href="#body" class="scrollto"><span>C</span>heckMe</a></h1>
+                            </div>
+                            <div id="nav-menu-container">
+                                <ul class="nav-menu" id="login" v-if="user">
+                                    <li>{{ user.displayName }}</li>
+                                    <li>
+                                        <img :src="user.photoURL" style="width: 30px; height: 30px; border-radius: 50%;"
+                                            icon="mdi-menu-down" />
+                                        <v-menu activator="parent" location="bottom end" transition="fade-transition">
+                                            <v-list density="compact" min-width="250" rounded="lg" slim>
+                                                <v-list-item @click="confirmGoogleLogout()" prepend-icon="mdi-logout"
+                                                    title="Logout" link></v-list-item>
+                                            </v-list>
+                                        </v-menu>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <v-dialog v-model="showLogout" max-width="550">
+                        <v-card class="p-3">
+                            <v-card-title>Confirmation</v-card-title>
+                            <v-card-text>Are you sure you want to logout?</v-card-text>
+                            <v-card-actions>
+                                <v-btn color="success" @click="logout">Yes</v-btn>
+                                <v-btn color="danger" @click="showLogout = false">Cancel</v-btn>
+                            </v-card-actions>
+                        </v-card>
+                    </v-dialog>
+
+                    <div v-if="user" class="pl-8 pr-8">
+                        <div v-if="userRole === 'Student'">
+                            <h2 class="my-5">Student</h2>
+                            <v-dialog v-model="showDialog" max-width="500">
+                                <v-card>
+                                    <v-card-title>
+                                        <span class="headline">Alert</span>
+                                    </v-card-title>
+                                    <v-card-text>
+                                        <p v-if="alertType === 'notFound'">Class ID not found.</p>
+                                        <p v-if="alertType === 'empty'">Please enter Class ID.</p>
+                                    </v-card-text>
+                                    <v-card-actions class="justify-end">
+                                        <v-btn color="black" @click="showDialog = false">Close</v-btn>
+                                    </v-card-actions>
+                                </v-card>
+                            </v-dialog>
+
+                            <v-row justify="center" align-items="center">
+                                <v-col cols="12" sm="10">
+                                    <v-text-field v-model="newcheckin.id" label="Class ID"
+                                        variant="outlined"></v-text-field>
+                                </v-col>
+                                <v-col cols="12" sm="2">
+                                    <v-btn block variant="tonal" color='black' size="x-large" @click="checkStudent">
+                                        JOIN
+                                    </v-btn>
+                                </v-col>
+                            </v-row>
+
+                            <div v-if="studentFound">
+                                <!-- <div> -->
+                                <v-row justify="center" align-items="center" class="my-5">
+                                    <v-col cols="12" sm="10">
+                                        <h2>Student Information</h2>
+                                    </v-col>
+                                    <v-col cols="12" sm="2">
+                                        <v-btn block variant="outlined" color='info' size="large"
+                                            @click="toggleQuizBox">
+                                            {{ showQuizBox ? 'Check' : 'Quiz' }}
+                                        </v-btn>
+                                    </v-col>
+                                </v-row>
+                                <v-col v-if="!showQuizBox" justify="center" align-items="center">
+                                    <v-row cols="12" sm="12">
+                                        <v-text-field v-model="studentInfo.sid" label="Student ID"
+                                            variant="outlined"></v-text-field>
+                                    </v-row>
+                                    <v-row cols="12" sm="12">
+                                        <v-text-field v-model="studentInfo.email" label="Email"
+                                            variant="outlined"></v-text-field>
+                                    </v-row>
+                                    <v-row cols="12" sm="12">
+                                        <v-text-field v-model="studentInfo.name" label="Name"
+                                            variant="outlined"></v-text-field>
+                                    </v-row>
+                                    <v-row cols="12" sm="12">
+                                        <v-text-field v-model="studentInfo.section" label="Section"
+                                            variant="outlined"></v-text-field>
+                                    </v-row>
+                                    <v-row cols="12" sm="12">
+                                        <v-btn block variant="tonal" color='success' size="x-large"
+                                            @click="submitAdditionalData">
+                                            Submit
+                                        </v-btn>
+                                    </v-row>
+                                </v-col>
+                                <v-col v-if="showQuizBox" justify="center" align-items="center">
+                                    <v-row cols="12" sm="12" class="mb-4">
+                                        <p class="h4">กล้วยมีสีอะไร?</p>
+                                    </v-row>
+                                    <v-row cols="12" sm="12">
+                                        <v-text-field v-model="" label="Answer" variant="outlined"></v-text-field>
+                                    </v-row>
+
+                                    <v-row cols="12" sm="12">
+                                        <v-btn block variant="tonal" color='success' size="x-large" @click="">
+                                            Submit
+                                        </v-btn>
+                                    </v-row>
+                                </v-col>
+                            </div>
+                        </div>
+
+                        <div v-if="userRole === 'Teacher'">
+                            <h1>Teachers</h1>
+
+                            <input type="text" :value="generateRandomID()" placeholder="ID" readonly>
+                            <input type="text" v-model="newcheckin.room" placeholder="Room">
+                            <select v-model="newcheckin.subject" placeholder="Subject">
+                                <option value="">Select</option>
+                                <option value="Math">Math</option>
+                                <option value="Science">Science</option>
+                                <option value="English">English</option>
+                            </select>
+                            <input type="date" v-model="newcheckin.class_date" placeholder="Class Date">
+                            <button @click="addTeacher">Add Checkin</button><br><br>
+
+                            <h3>คำถามชั้นเรียน</h3>
+                            <div>
+     
+                                <input type="hidden" v-model="newQuestion.id" :value="generateRandomID()" readonly>
+                                <input type="text" v-model="newQuestion.question" placeholder="Question">
+                                <button @click="addQuestion">Add Question</button><br><br>
+                            </div>
+
+                            <div>
+                                <div v-if="questionList.length > 0">
+                                    <h2>คำถามชั้นเรียน</h2>
+                                    <ul>
+                                        <li v-for="question in questionList" :key="question.id">
+                                            <p>{{ question.question }}</p>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div v-else>
+                                    <p>ไม่มีคำถามที่ตรงกับเงื่อนไข</p>
+                                </div>
+                            </div>
+                                         
+                            <br>
+                            <ul>
+                                <li v-for="teacher in checkin" :key="teacher.id">
+                                    <p>ID: {{ teacher.id }}</p>
+                                    <p>Room: {{ teacher.room }}</p>
+                                    <p>Class Date: {{ teacher.class_date }}</p>
+                                    <p>Subject: {{ teacher.subject }}</p>
+                                </li>
+                            </ul><br>
+                            <p>รหัสห้องของคุณ</p>
+                            <div>
+                                <p>ID: {{ latestCheckin.id }}</p>
+                                <p>Room: {{ latestCheckin.room }}</p>
+                                <p>Subject: {{ latestCheckin.subject }}</p>
+                                <p>Class Date: {{ latestCheckin.class_date }}</p>
+                            </div><br><br>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Email</th>
+                                        <th>Name</th>
+                                        <th>Section</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="student in students" :key="student.id">
+                                        <td>{{ student.sid }}</td>
+                                        <td>{{ student.email }}</td>
+                                        <td>{{ student.name }}</td>
+                                        <td>{{ student.section }}</td>
+                                        <td><button @click="deleteData(student)">DEL</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </v-container>
+        </v-app>
+
+    </div>
+
+    <script src="index.js"></script>
+</body>
+
+</html>
